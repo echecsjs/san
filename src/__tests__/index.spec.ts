@@ -109,6 +109,22 @@ describe('parse — errors', () => {
   });
 });
 
+describe('parse — with position', () => {
+  it('parses and resolves e4 from starting position', () => {
+    const move = parse('e4', STARTING_POSITION);
+    expect(move.from).toBe('e2');
+    expect(move.to).toBe('e4');
+    expect(move.promotion).toBeUndefined();
+  });
+
+  it('parses and resolves Nf3 from starting position', () => {
+    const move = parse('Nf3', STARTING_POSITION);
+    expect(move.from).toBe('g1');
+    expect(move.to).toBe('f3');
+    expect(move.promotion).toBeUndefined();
+  });
+});
+
 // ---------------------------------------------------------------------------
 // resolve()
 // ---------------------------------------------------------------------------
