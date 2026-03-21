@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com), and this
 project adheres to [Semantic Versioning](https://semver.org).
 
+## [1.0.2] - 2026-03-21
+
+### Fixed
+
+- Replace `file:` dependencies with npm registry versions so CI can install
+  without sibling directories.
+- Fix type mismatch between `@echecs/fen` and `@echecs/position` in test
+  fixtures.
+
 ## [1.0.1] - 2026-03-21
 
 ### Fixed
