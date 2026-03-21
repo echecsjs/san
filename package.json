@@ -4,11 +4,11 @@
     "url": "https://github.com/mormubis/san/issues"
   },
   "dependencies": {
-    "@echecs/position": "file:../position"
+    "@echecs/position": "^1.0.2"
   },
   "description": "Parse, resolve, and stringify SAN (Standard Algebraic Notation) chess moves. Strict TypeScript.",
   "devDependencies": {
-    "@echecs/fen": "file:../fen",
+    "@echecs/fen": "^1.0.1",
     "@eslint/js": "^10.0.1",
     "@typescript-eslint/parser": "^8.57.0",
     "@vitest/coverage-v8": "^4.1.0",

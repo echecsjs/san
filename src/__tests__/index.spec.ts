@@ -170,14 +170,18 @@ describe('resolve — starting position', () => {
 
 describe('resolve — castling', () => {
   it('resolves O-O for white', () => {
-    const pos = parseFen('r3k2r/pppppppp/8/8/8/8/PPPPPPPP/R3K2R w KQkq - 0 1')!;
+    const pos = toPosition(
+      'r3k2r/pppppppp/8/8/8/8/PPPPPPPP/R3K2R w KQkq - 0 1',
+    );
     const move = resolve(parse('O-O'), pos);
     expect(move.from).toBe('e1');
     expect(move.to).toBe('g1');
   });
 
   it('resolves O-O-O for white', () => {
-    const pos = parseFen('r3k2r/pppppppp/8/8/8/8/PPPPPPPP/R3K2R w KQkq - 0 1')!;
+    const pos = toPosition(
+      'r3k2r/pppppppp/8/8/8/8/PPPPPPPP/R3K2R w KQkq - 0 1',
+    );
     const move = resolve(parse('O-O-O'), pos);
     expect(move.from).toBe('e1');
     expect(move.to).toBe('c1');

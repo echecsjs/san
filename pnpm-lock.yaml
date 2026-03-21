@@ -9,12 +9,12 @@ importers:
   .:
     dependencies:
       '@echecs/position':
-        specifier: file:../position
-        version: file:../position
+        specifier: ^1.0.2
+        version: 1.0.2
     devDependencies:
       '@echecs/fen':
-        specifier: file:../fen
-        version: file:../fen
+        specifier: ^1.0.1
+        version: 1.0.1
       '@eslint/js':
         specifier: ^10.0.1
         version: 10.0.1(eslint@10.0.3)
@@ -111,12 +111,12 @@ packages:
     resolution: {integrity: sha512-6zABk/ECA/QYSCQ1NGiVwwbQerUCZ+TQbp64Q3AgmfNvurHH0j8TtXa1qbShXA6qqkpAj4V5W8pP6mLe1mcMqA==}
     engines: {node: '>=18'}
 
-  '@echecs/fen@file:../fen':
-    resolution: {directory: ../fen, type: directory}
+  '@echecs/fen@1.0.1':
+    resolution: {integrity: sha512-bCrEYHslZiEiX4Gv7M6Xgxw6IHIBxiFos0xDCyWzwaUmFG4pRUkq5+SlGjpCZmYjWi5Q3pS0AVJmtsgGOwCpHA==}
     engines: {node: '>=20'}
 
-  '@echecs/position@file:../position':
-    resolution: {directory: ../position, type: directory}
+  '@echecs/position@1.0.2':
+    resolution: {integrity: sha512-8H5onNRSudqyblCr0q2+TNxrQHkWwWYqcaC737GFjjHre4YsPx0v4P9RYME6EIso4VuQC1cK2KwoBtKLEVhcIQ==}
     engines: {node: '>=20'}
 
   '@emnapi/core@1.9.0':
@@ -1560,11 +1560,9 @@ snapshots:
 
   '@bcoe/v8-coverage@1.0.2': {}
 
-  '@echecs/fen@file:../fen':
-    dependencies:
-      '@echecs/position': file:../position
+  '@echecs/fen@1.0.1': {}
 
-  '@echecs/position@file:../position': {}
+  '@echecs/position@1.0.2': {}
 
   '@emnapi/core@1.9.0':
     dependencies:
