@@ -9,7 +9,6 @@ import {
   squareToIndex,
 } from '@echecs/position/internal';
 
-
 import type {
   Color,
   File,
@@ -195,9 +194,9 @@ function parse(san: string, position?: Position): SanMove | Move {
   if (clean.startsWith('O-O-O')) {
     const check = clean.endsWith('#')
       ? 'checkmate'
-      : (clean.endsWith('+')
+      : clean.endsWith('+')
         ? 'check'
-        : undefined);
+        : undefined;
     const sanMove: SanMove = {
       capture: false,
       castle: 'queenside',
@@ -219,9 +218,9 @@ function parse(san: string, position?: Position): SanMove | Move {
   if (clean.startsWith('O-O')) {
     const check = clean.endsWith('#')
       ? 'checkmate'
-      : (clean.endsWith('+')
+      : clean.endsWith('+')
         ? 'check'
-        : undefined);
+        : undefined;
     const sanMove: SanMove = {
       capture: false,
       castle: 'kingside',
@@ -277,9 +276,9 @@ function parse(san: string, position?: Position): SanMove | Move {
   const check =
     checkString === '#'
       ? 'checkmate'
-      : (checkString === '+'
+      : checkString === '+'
         ? 'check'
-        : undefined);
+        : undefined;
 
   const sanMove: SanMove = {
     capture,
@@ -438,9 +437,9 @@ function stringify(move: Move, position: Position): string {
     if (fileDiff === 2) {
       const after = applyMoveToBoard(position, move.from, move.to);
       const suffix = isKingInCheck(after, position.turn === 'w' ? 'b' : 'w')
-        ? (isCheckmate(after)
+        ? isCheckmate(after)
           ? '#'
-          : '+')
+          : '+'
         : '';
       return `O-O${suffix}`;
     }
@@ -448,9 +447,9 @@ function stringify(move: Move, position: Position): string {
     if (fileDiff === -2) {
       const after = applyMoveToBoard(position, move.from, move.to);
       const suffix = isKingInCheck(after, position.turn === 'w' ? 'b' : 'w')
-        ? (isCheckmate(after)
+        ? isCheckmate(after)
           ? '#'
-          : '+')
+          : '+'
         : '';
       return `O-O-O${suffix}`;
     }
