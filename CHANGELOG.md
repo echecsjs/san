@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com), and this
 project adheres to [Semantic Versioning](https://semver.org).
 
+## [2.0.0] - 2026-04-09
+
+### Changed
+
+- Upgraded `@echecs/position` from `^1.0.2` to `^3.0.3`.
+- `SanMove.piece` and `SanMove.promotion` now use full words (`'pawn'`,
+  `'knight'`, `'queen'`, etc.) instead of single letters (`'p'`, `'n'`, `'q'`).
+- `Move.promotion` is now optional instead of `PromotionPieceType | undefined`.
+- `Move` and `PromotionPieceType` are defined locally instead of re-exported
+  from `@echecs/position`.
+- Removed dependency on `@echecs/position/internal` — implementation uses the
+  public `Position` API (`reach`, `isCheck`, `derive`, `at`).
+- Simplified `isCheckmate` to use `Position.reach()` instead of 0x88 index
+  iteration.
+
 ## [1.0.2] - 2026-03-21
 
 ### Fixed

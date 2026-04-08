@@ -1,28 +1,24 @@
-import { Position } from '@echecs/position';
-import {
-  ATTACKS,
-  DIFF_OFFSET,
-  OFF_BOARD,
-  PIECE_MASKS,
-  RAYS,
-  boardFromMap,
-  squareToIndex,
-} from '@echecs/position/internal';
-
 import type {
   Color,
   File,
-  Move,
   Piece,
   PieceType,
-  PromotionPieceType,
+  Position,
   Rank,
   Square,
 } from '@echecs/position';
 
 // ---------------------------------------------------------------------------
-// SanMove type
+// Types owned by this package
 // ---------------------------------------------------------------------------
+
+type PromotionPieceType = 'bishop' | 'knight' | 'queen' | 'rook';
+
+interface Move {
+  from: Square;
+  promotion?: PromotionPieceType;
+  to: Square;
+}
 
 interface SanMove {
   capture: boolean;
@@ -40,18 +36,18 @@ interface SanMove {
 // ---------------------------------------------------------------------------
 
 const PIECE_LETTERS: Record<string, PieceType> = {
-  B: 'b',
-  K: 'k',
-  N: 'n',
-  Q: 'q',
-  R: 'r',
+  B: 'bishop',
+  K: 'king',
+  N: 'knight',
+  Q: 'queen',
+  R: 'rook',
 };
 
 const PROMOTION_LETTERS: Record<string, PromotionPieceType> = {
-  B: 'b',
-  N: 'n',
-  Q: 'q',
-  R: 'r',
+  B: 'bishop',
+  N: 'knight',
+  Q: 'queen',
+  R: 'rook',
 };
 
 const FILES_SET = new Set(['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h']);
@@ -63,117 +59,33 @@ const RANKS_SET = new Set(['1', '2', '3', '4', '5', '6', '7', '8']);
 const SAN_REGEX =
   /^([BKNQR])?([a-h])?([1-8])?(x)?([a-h])([1-8])(?:=([BKNQR]))?([+#])?$/;
 
-function canAttack(
-  board: (Piece | undefined)[],
-  fromIndex: number,
-  toIndex: number,
-  pieceType: PieceType,
-  color: Color,
-): boolean {
-  const diff = toIndex - fromIndex;
-  const tableIndex = diff + DIFF_OFFSET;
-  if (tableIndex < 0 || tableIndex >= 240) {
-    return false;
-  }
-
-  const attackMask = ATTACKS[tableIndex] ?? 0;
-  const pieceMask = PIECE_MASKS[pieceType] ?? 0;
-  if ((attackMask & pieceMask) === 0) {
-    return false;
-  }
-
-  // Pawn direction check
-  if (pieceType === 'p') {
-    if (color === 'w' && diff > 0) {
-      return false;
-    }
-    if (color === 'b' && diff < 0) {
-      return false;
-    }
-  }
-
-  const ray = RAYS[tableIndex] ?? 0;
-  if (ray === 0) {
-    return true;
-  } // Non-sliding
-
-  // Check for blockers
-  let index = fromIndex + ray;
-  while (index !== toIndex) {
-    if ((index & OFF_BOARD) !== 0) {
-      return false;
-    }
-    if (board[index] !== undefined) {
-      return false;
-    }
-    index += ray;
-  }
-  return true;
-}
-
 function applyMoveToBoard(
   position: Position,
   from: Square,
   to: Square,
   promotion?: PromotionPieceType,
 ): Position {
-  const board = position.pieces();
-  const p = board.get(from);
-  if (p === undefined) {
+  const piece = position.at(from);
+  if (piece === undefined) {
     return position;
   }
 
-  board.delete(from);
+  const changes: [Square, Piece | undefined][] = [
+    [from, undefined],
+    [to, promotion ? { color: piece.color, type: promotion } : piece],
+  ];
 
-  // En passant capture
-  if (p.type === 'p' && to === position.enPassantSquare) {
+  // En passant capture — remove the captured pawn
+  if (piece.type === 'pawn' && to === position.enPassantSquare) {
     const epRank =
-      position.turn === 'w'
+      position.turn === 'white'
         ? String(Number(to[1]) - 1)
         : String(Number(to[1]) + 1);
-    board.delete(`${to[0]}${epRank}` as Square);
+    changes.push([`${to[0]}${epRank}` as Square, undefined]);
   }
 
-  const finalPiece: Piece = promotion ? { color: p.color, type: promotion } : p;
-  board.set(to, finalPiece);
-
-  const turn: Color = position.turn === 'w' ? 'b' : 'w';
-  return new Position(board, {
-    castlingRights: position.castlingRights,
-    enPassantSquare: undefined,
-    turn,
-  });
-}
-
-function findKing(position: Position, color: Color): Square | undefined {
-  for (const [square, p] of position.pieces()) {
-    if (p.type === 'k' && p.color === color) {
-      return square;
-    }
-  }
-  return undefined;
-}
-
-function isKingInCheck(position: Position, color: Color): boolean {
-  const kingSquare = findKing(position, color);
-  if (kingSquare === undefined) {
-    return false;
-  }
-
-  const board = boardFromMap(position.pieces());
-  const targetIndex = squareToIndex(kingSquare);
-  const opponent: Color = color === 'w' ? 'b' : 'w';
-
-  for (const [sq, p] of position.pieces()) {
-    if (p.color !== opponent) {
-      continue;
-    }
-    const fromIndex = squareToIndex(sq);
-    if (canAttack(board, fromIndex, targetIndex, p.type, p.color)) {
-      return true;
-    }
-  }
-  return false;
+  const turn: Color = position.turn === 'white' ? 'black' : 'white';
+  return position.derive({ changes, turn });
 }
 
 // ---------------------------------------------------------------------------
@@ -202,7 +114,7 @@ function parse(san: string, position?: Position): SanMove | Move {
       castle: 'queenside',
       check,
       file: undefined,
-      piece: 'k',
+      piece: 'king',
       promotion: undefined,
       rank: undefined,
       to: undefined,
@@ -226,7 +138,7 @@ function parse(san: string, position?: Position): SanMove | Move {
       castle: 'kingside',
       check,
       file: undefined,
-      piece: 'k',
+      piece: 'king',
       promotion: undefined,
       rank: undefined,
       to: undefined,
@@ -257,8 +169,8 @@ function parse(san: string, position?: Position): SanMove | Move {
   ] = match;
 
   const piece: PieceType = pieceString
-    ? (PIECE_LETTERS[pieceString] ?? 'p')
-    : 'p';
+    ? (PIECE_LETTERS[pieceString] ?? 'pawn')
+    : 'pawn';
   const file =
     fromFileString && FILES_SET.has(fromFileString)
       ? (fromFileString as File)
@@ -305,7 +217,7 @@ function parse(san: string, position?: Position): SanMove | Move {
 function resolve(move: SanMove, position: Position): Move {
   // Castling
   if (move.castle !== undefined) {
-    const backRank = position.turn === 'w' ? '1' : '8';
+    const backRank = position.turn === 'white' ? '1' : '8';
     const from = `e${backRank}` as Square;
     const to =
       move.castle === 'kingside'
@@ -318,12 +230,10 @@ function resolve(move: SanMove, position: Position): Move {
     throw new RangeError('SanMove has no target square');
   }
 
-  const toIndex = squareToIndex(move.to);
-  const board = boardFromMap(position.pieces());
   const candidates: Square[] = [];
 
-  for (const [square, p] of position.pieces()) {
-    if (p.type !== move.piece || p.color !== position.turn) {
+  for (const [square, piece] of position.pieces(position.turn)) {
+    if (piece.type !== move.piece) {
       continue;
     }
     if (move.file !== undefined && square[0] !== move.file) {
@@ -333,58 +243,17 @@ function resolve(move: SanMove, position: Position): Move {
       continue;
     }
 
-    const fromIndex = squareToIndex(square);
-
-    // Special handling for pawns: they move forward, not diagonally (unless capturing)
-    if (move.piece === 'p') {
-      const direction = position.turn === 'w' ? -1 : 1;
-      const fromRank = Number.parseInt(square[1] ?? '1', 10);
-      const toRank = Number.parseInt(move.to[1] ?? '1', 10);
-      const toFile = move.to[0] ?? '';
-      const fromFile = square[0] ?? '';
-
-      if (move.capture) {
-        // Pawn capture: must be one diagonal step
-        if (
-          toFile !== fromFile &&
-          Math.abs(toRank - fromRank) === 1 &&
-          toRank - fromRank === -direction
-        ) {
-          // valid pawn capture direction
-        } else {
-          continue;
-        }
-      } else {
-        // Pawn push: must be on same file
-        if (toFile !== fromFile) {
-          continue;
-        }
-        // One step forward
-        if (toRank - fromRank !== -direction) {
-          // Or two steps from starting rank
-          const startRank = position.turn === 'w' ? 2 : 7;
-          if (
-            !(
-              fromRank === startRank &&
-              toRank - fromRank === -2 * direction &&
-              board[
-                squareToIndex(`${fromFile}${fromRank - direction}` as Square)
-              ] === undefined
-            )
-          ) {
-            continue;
-          }
-        }
-      }
-    } else if (
-      !canAttack(board, fromIndex, toIndex, move.piece, position.turn)
-    ) {
+    // Check if piece can reach the target square
+    const reachable = position.reach(square, piece);
+    if (!reachable.includes(move.to)) {
       continue;
     }
 
-    // Verify move doesn't leave own king in check
+    // Verify move doesn't leave own king in check.
+    // applyMoveToBoard flips the turn, so isCheck tests the opponent.
+    // Derive back to our turn to test whether our king is exposed.
     const after = applyMoveToBoard(position, square, move.to, move.promotion);
-    if (isKingInCheck(after, position.turn)) {
+    if (after.derive({ turn: position.turn }).isCheck) {
       continue;
     }
 
@@ -416,72 +285,65 @@ function resolve(move: SanMove, position: Position): Move {
 // ---------------------------------------------------------------------------
 
 const PIECE_TO_LETTER: Record<PieceType, string> = {
-  b: 'B',
-  k: 'K',
-  n: 'N',
-  p: '',
-  q: 'Q',
-  r: 'R',
+  bishop: 'B',
+  king: 'K',
+  knight: 'N',
+  pawn: '',
+  queen: 'Q',
+  rook: 'R',
+};
+
+const PROMOTION_TO_LETTER: Record<PromotionPieceType, string> = {
+  bishop: 'B',
+  knight: 'N',
+  queen: 'Q',
+  rook: 'R',
 };
 
 function stringify(move: Move, position: Position): string {
-  const p = position.piece(move.from);
-  if (p === undefined) {
+  const piece = position.at(move.from);
+  if (piece === undefined) {
     throw new RangeError(`No piece on ${move.from}`);
   }
 
   // Castling
-  if (p.type === 'k') {
+  if (piece.type === 'king') {
     const fileDiff =
       (move.to.codePointAt(0) ?? 0) - (move.from.codePointAt(0) ?? 0);
     if (fileDiff === 2) {
       const after = applyMoveToBoard(position, move.from, move.to);
-      const suffix = isKingInCheck(after, position.turn === 'w' ? 'b' : 'w')
-        ? isCheckmate(after)
-          ? '#'
-          : '+'
-        : '';
+      const suffix = after.isCheck ? (isCheckmate(after) ? '#' : '+') : '';
       return `O-O${suffix}`;
     }
 
     if (fileDiff === -2) {
       const after = applyMoveToBoard(position, move.from, move.to);
-      const suffix = isKingInCheck(after, position.turn === 'w' ? 'b' : 'w')
-        ? isCheckmate(after)
-          ? '#'
-          : '+'
-        : '';
+      const suffix = after.isCheck ? (isCheckmate(after) ? '#' : '+') : '';
       return `O-O-O${suffix}`;
     }
   }
 
-  const pieceString = PIECE_TO_LETTER[p.type];
+  const pieceString = PIECE_TO_LETTER[piece.type];
   const isCapture =
-    position.piece(move.to) !== undefined ||
-    (p.type === 'p' && move.to === position.enPassantSquare);
+    position.at(move.to) !== undefined ||
+    (piece.type === 'pawn' && move.to === position.enPassantSquare);
 
   // Determine disambiguation
   let disambig = '';
-  if (p.type !== 'p') {
-    const toIndex = squareToIndex(move.to);
-    const board = boardFromMap(position.pieces());
+  if (piece.type !== 'pawn') {
     const ambiguous: Square[] = [];
 
-    for (const [sq, other] of position.pieces()) {
-      if (
-        sq === move.from ||
-        other.type !== p.type ||
-        other.color !== p.color
-      ) {
+    for (const [sq, other] of position.pieces(position.turn)) {
+      if (sq === move.from || other.type !== piece.type) {
         continue;
       }
-      const fromIndex = squareToIndex(sq);
-      if (!canAttack(board, fromIndex, toIndex, p.type, p.color)) {
+      const reachable = position.reach(sq, other);
+      if (!reachable.includes(move.to)) {
         continue;
       }
       // Check it's a legal move (doesn't leave king in check)
       const after = applyMoveToBoard(position, sq, move.to);
-      if (!isKingInCheck(after, position.turn)) {
+      if (!after.derive({ turn: position.turn }).isCheck) {
         ambiguous.push(sq);
       }
     }
@@ -503,13 +365,14 @@ function stringify(move: Move, position: Position): string {
   }
 
   const captureString = isCapture ? 'x' : '';
-  const promoString = move.promotion ? `=${move.promotion.toUpperCase()}` : '';
+  const promoString = move.promotion
+    ? `=${PROMOTION_TO_LETTER[move.promotion]}`
+    : '';
 
   // Apply move and check for check/checkmate
   const after = applyMoveToBoard(position, move.from, move.to, move.promotion);
-  const opponent: Color = position.turn === 'w' ? 'b' : 'w';
   let suffix = '';
-  if (isKingInCheck(after, opponent)) {
+  if (after.isCheck) {
     suffix = isCheckmate(after) ? '#' : '+';
   }
 
@@ -517,64 +380,22 @@ function stringify(move: Move, position: Position): string {
 }
 
 function isCheckmate(position: Position): boolean {
-  if (!isKingInCheck(position, position.turn)) {
+  if (!position.isCheck) {
     return false;
   }
 
   // Try all moves for the side to move — if any gets out of check, not checkmate
-  for (const [from, p] of position.pieces()) {
-    if (p.color !== position.turn) {
-      continue;
-    }
-    // Try each possible destination (simplified: try all squares)
-    for (let index = 0; index <= 119; index++) {
-      if (index & OFF_BOARD) {
-        continue;
-      }
-      const toIndex = index;
-      const fromIndex = squareToIndex(from);
-      const board = boardFromMap(position.pieces());
-      if (!canAttack(board, fromIndex, toIndex, p.type, p.color)) {
-        continue;
-      }
-      const target = position.piece(
-        [...position.pieces().keys()].find(
-          (sq) => squareToIndex(sq) === toIndex,
-        ) ?? ('' as Square),
-      );
+  for (const [from, piece] of position.pieces(position.turn)) {
+    const reachable = position.reach(from, piece);
+    for (const to of reachable) {
+      // Skip captures of own pieces (reach already filters these)
+      const target = position.at(to);
       if (target?.color === position.turn) {
         continue;
       }
 
-      // Find target square
-      let toSquare: Square | undefined;
-      for (const sq of position.pieces().keys()) {
-        if (squareToIndex(sq) === toIndex) {
-          toSquare = sq;
-          break;
-        }
-      }
-      // Also need to check empty squares — build all 64 squares
-      if (toSquare === undefined) {
-        for (const f of ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h']) {
-          for (const r of ['1', '2', '3', '4', '5', '6', '7', '8']) {
-            const sq = `${f}${r}` as Square;
-            if (squareToIndex(sq) === toIndex) {
-              toSquare = sq;
-              break;
-            }
-          }
-          if (toSquare !== undefined) {
-            break;
-          }
-        }
-      }
-      if (toSquare === undefined) {
-        continue;
-      }
-
-      const after = applyMoveToBoard(position, from, toSquare);
-      if (!isKingInCheck(after, position.turn)) {
+      const after = applyMoveToBoard(position, from, to);
+      if (!after.derive({ turn: position.turn }).isCheck) {
         return false;
       }
     }
@@ -582,6 +403,6 @@ function isCheckmate(position: Position): boolean {
   return true;
 }
 
-export type { Move, Position } from '@echecs/position';
-export type { SanMove };
+export type { Move, PromotionPieceType, SanMove };
+export type { Position } from '@echecs/position';
 export { parse, resolve, stringify };

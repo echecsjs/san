@@ -9,8 +9,8 @@ importers:
   .:
     dependencies:
       '@echecs/position':
-        specifier: ^1.0.2
-        version: 1.0.2
+        specifier: ^3.0.3
+        version: 3.0.3
     devDependencies:
       '@echecs/fen':
         specifier: ^1.0.1
@@ -115,8 +115,12 @@ packages:
     resolution: {integrity: sha512-bCrEYHslZiEiX4Gv7M6Xgxw6IHIBxiFos0xDCyWzwaUmFG4pRUkq5+SlGjpCZmYjWi5Q3pS0AVJmtsgGOwCpHA==}
     engines: {node: '>=20'}
 
-  '@echecs/position@1.0.2':
-    resolution: {integrity: sha512-8H5onNRSudqyblCr0q2+TNxrQHkWwWYqcaC737GFjjHre4YsPx0v4P9RYME6EIso4VuQC1cK2KwoBtKLEVhcIQ==}
+  '@echecs/position@3.0.3':
+    resolution: {integrity: sha512-6QG30wBg3LT2jgf1HVWXblwwHxI5HO86D+errFNV9CAp1598qGnlm8mh2GyzOT7jvn3KythZ2JgCr/CpiBtJIA==}
+    engines: {node: '>=20'}
+
+  '@echecs/zobrist@1.0.0':
+    resolution: {integrity: sha512-DYAs10AA42r6p4/hNMVAX0L6CzqOI6VZ0Vasu6mDpNHsLnnSiCBdcg5mInWA58NKJxTthpEka8ZzdKeemN6izQ==}
     engines: {node: '>=20'}
 
   '@emnapi/core@1.9.0':
@@ -1191,12 +1195,16 @@ packages:
     resolution: {integrity: sha512-5gTmgEY/sqK6gFXLIsQNH19lWb4ebPDLA4SdLP7dsWkIXHWlG66oPuVvXSGFPppYZz8ZDZq0dYYrbHfBCVUb1Q==}
     engines: {node: '>=12'}
 
+  picomatch@4.0.4:
+    resolution: {integrity: sha512-QP88BAKvMam/3NxH6vj2o21R6MjxZUAd6nlwAS/pnGvN9IVLocLHxGYIzFhg6fUQ+5th6P4dv4eW9jX3DSIj7A==}
+    engines: {node: '>=12'}
+
   pluralize@8.0.0:
     resolution: {integrity: sha512-Nc3IT5yHzflTfbjgqWcCPpo7DaKy4FnpB0l/zCAW0Tc7jxAiuqSxHasntB3D7887LSrA93kDJ9IXovxJYxyLCA==}
     engines: {node: '>=4'}
 
-  postcss@8.5.8:
-    resolution: {integrity: sha512-OW/rX8O/jXnm82Ey1k44pObPtdblfiuWnrd8X7GJ7emImCOstunGbXUpp7HdBrFQX6rJzn3sPT397Wp5aCwCHg==}
+  postcss@8.5.9:
+    resolution: {integrity: sha512-7a70Nsot+EMX9fFU3064K/kdHWZqGVY+BADLyXc8Dfv+mTLLVl6JzJpPaCZ2kQL9gIJvKXSLMHhqdRRjwQeFtw==}
     engines: {node: ^10 || ^12 || >=14}
 
   prelude-ls@1.2.1:
@@ -1336,6 +1344,10 @@ packages:
 
   tinyglobby@0.2.15:
     resolution: {integrity: sha512-j2Zq4NyQYG5XMST4cbs02Ak8iJUdxRM0XI5QyxXuZOzKOINmWurp3smXu3y5wDcJrptwpSjgXHzIQxR0omXljQ==}
+    engines: {node: '>=12.0.0'}
+
+  tinyglobby@0.2.16:
+    resolution: {integrity: sha512-pn99VhoACYR8nFHhxqix+uvsbXineAasWm5ojXoN8xEwK5Kd3/TrhNn1wByuD52UxWRLy8pu+kRMniEi6Eq9Zg==}
     engines: {node: '>=12.0.0'}
 
   tinyrainbow@3.1.0:
@@ -1580,7 +1592,11 @@ snapshots:
 
   '@echecs/fen@1.0.1': {}
 
-  '@echecs/position@1.0.2': {}
+  '@echecs/position@3.0.3':
+    dependencies:
+      '@echecs/zobrist': 1.0.0
+
+  '@echecs/zobrist@1.0.0': {}
 
   '@emnapi/core@1.9.0':
     dependencies:
@@ -2284,6 +2300,10 @@ snapshots:
     optionalDependencies:
       picomatch: 4.0.3
 
+  fdir@6.5.0(picomatch@4.0.4):
+    optionalDependencies:
+      picomatch: 4.0.4
+
   file-entry-cache@8.0.0:
     dependencies:
       flat-cache: 4.0.1
@@ -2550,9 +2570,11 @@ snapshots:
 
   picomatch@4.0.3: {}
 
+  picomatch@4.0.4: {}
+
   pluralize@8.0.0: {}
 
-  postcss@8.5.8:
+  postcss@8.5.9:
     dependencies:
       nanoid: 3.3.11
       picocolors: 1.1.1
@@ -2683,6 +2705,11 @@ snapshots:
       fdir: 6.5.0(picomatch@4.0.3)
       picomatch: 4.0.3
 
+  tinyglobby@0.2.16:
+    dependencies:
+      fdir: 6.5.0(picomatch@4.0.4)
+      picomatch: 4.0.4
+
   tinyrainbow@3.1.0: {}
 
   tree-kill@1.2.2: {}
@@ -2796,10 +2823,10 @@ snapshots:
     dependencies:
       '@oxc-project/runtime': 0.115.0
       lightningcss: 1.32.0
-      picomatch: 4.0.3
-      postcss: 8.5.8
+      picomatch: 4.0.4
+      postcss: 8.5.9
       rolldown: 1.0.0-rc.9
-      tinyglobby: 0.2.15
+      tinyglobby: 0.2.16
     optionalDependencies:
       fsevents: 2.3.3
       yaml: 2.8.2

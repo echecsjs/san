@@ -4,15 +4,57 @@ import { describe, expect, it } from 'vitest';
 
 import { parse, resolve, stringify } from '../index.js';
 
-// Helper: parseFen returns a plain object; wrap it in a Position instance so
-// that resolve/stringify can call .pieces() and .piece() on it.
+import type { CastlingRights, Color, Piece, Square } from '@echecs/position';
+
+const START = new Position(STARTING_POSITION);
+
+// Helper: parseFen returns the old type conventions ('w'/'b', single-letter
+// piece types, flat castling rights). Bridge to Position v3 types.
+const COLOR_MAP: Record<string, Color> = { b: 'black', w: 'white' };
+const PIECE_MAP: Record<string, Piece['type']> = {
+  b: 'bishop',
+  k: 'king',
+  n: 'knight',
+  p: 'pawn',
+  q: 'queen',
+  r: 'rook',
+};
+
 function toPosition(fen: string): Position {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const raw = parseFen(fen) as any;
-  return new Position(raw.board, {
-    castlingRights: raw.castlingRights,
+
+  // Convert board map from old types to new types
+  const board = new Map<Square, Piece>();
+  for (const [square, piece] of raw.board) {
+    board.set(
+      square as Square,
+      {
+        color: COLOR_MAP[piece.color] ?? 'white',
+        type: PIECE_MAP[piece.type] ?? 'pawn',
+      } as Piece,
+    );
+  }
+
+  // Convert castling rights from flat to nested
+  const castlingRights: CastlingRights = {
+    black: {
+      king: raw.castlingRights?.bK ?? false,
+      queen: raw.castlingRights?.bQ ?? false,
+    },
+    white: {
+      king: raw.castlingRights?.wK ?? false,
+      queen: raw.castlingRights?.wQ ?? false,
+    },
+  };
+
+  // Convert turn
+  const turn: Color = COLOR_MAP[raw.turn] ?? 'white';
+
+  return new Position(board, {
+    castlingRights,
     enPassantSquare: raw.enPassantSquare,
-    turn: raw.turn,
+    turn,
   });
 }
 
@@ -23,7 +65,7 @@ function toPosition(fen: string): Position {
 describe('parse — pawn moves', () => {
   it('parses a simple pawn push', () => {
     const move = parse('e4');
-    expect(move.piece).toBe('p');
+    expect(move.piece).toBe('pawn');
     expect(move.to).toBe('e4');
     expect(move.capture).toBe(false);
     expect(move.castle).toBeUndefined();
@@ -33,7 +75,7 @@ describe('parse — pawn moves', () => {
 
   it('parses a pawn capture', () => {
     const move = parse('exd5');
-    expect(move.piece).toBe('p');
+    expect(move.piece).toBe('pawn');
     expect(move.capture).toBe(true);
     expect(move.file).toBe('e');
     expect(move.to).toBe('d5');
@@ -41,15 +83,15 @@ describe('parse — pawn moves', () => {
 
   it('parses a pawn promotion', () => {
     const move = parse('e8=Q');
-    expect(move.piece).toBe('p');
+    expect(move.piece).toBe('pawn');
     expect(move.to).toBe('e8');
-    expect(move.promotion).toBe('q');
+    expect(move.promotion).toBe('queen');
   });
 
   it('parses a promotion with checkmate', () => {
     const move = parse('exd8=Q#');
     expect(move.capture).toBe(true);
-    expect(move.promotion).toBe('q');
+    expect(move.promotion).toBe('queen');
     expect(move.check).toBe('checkmate');
   });
 });
@@ -57,28 +99,28 @@ describe('parse — pawn moves', () => {
 describe('parse — piece moves', () => {
   it('parses a knight move', () => {
     const move = parse('Nf3');
-    expect(move.piece).toBe('n');
+    expect(move.piece).toBe('knight');
     expect(move.to).toBe('f3');
     expect(move.capture).toBe(false);
   });
 
   it('parses a piece capture', () => {
     const move = parse('Rxe4');
-    expect(move.piece).toBe('r');
+    expect(move.piece).toBe('rook');
     expect(move.capture).toBe(true);
     expect(move.to).toBe('e4');
   });
 
   it('parses file disambiguation', () => {
     const move = parse('Nbd7');
-    expect(move.piece).toBe('n');
+    expect(move.piece).toBe('knight');
     expect(move.file).toBe('b');
     expect(move.to).toBe('d7');
   });
 
   it('parses rank disambiguation', () => {
     const move = parse('N2d4');
-    expect(move.piece).toBe('n');
+    expect(move.piece).toBe('knight');
     expect(move.rank).toBe('2');
     expect(move.to).toBe('d4');
   });
@@ -99,7 +141,7 @@ describe('parse — castling', () => {
     const move = parse('O-O');
     expect(move.castle).toBe('kingside');
     expect(move.to).toBeUndefined();
-    expect(move.piece).toBe('k');
+    expect(move.piece).toBe('king');
   });
 
   it('parses queenside castling', () => {
@@ -123,14 +165,14 @@ describe('parse — errors', () => {
 
 describe('parse — with position', () => {
   it('parses and resolves e4 from starting position', () => {
-    const move = parse('e4', STARTING_POSITION);
+    const move = parse('e4', START);
     expect(move.from).toBe('e2');
     expect(move.to).toBe('e4');
     expect(move.promotion).toBeUndefined();
   });
 
   it('parses and resolves Nf3 from starting position', () => {
-    const move = parse('Nf3', STARTING_POSITION);
+    const move = parse('Nf3', START);
     expect(move.from).toBe('g1');
     expect(move.to).toBe('f3');
     expect(move.promotion).toBeUndefined();
@@ -143,26 +185,26 @@ describe('parse — with position', () => {
 
 describe('resolve — starting position', () => {
   it('resolves e4', () => {
-    const move = resolve(parse('e4'), STARTING_POSITION);
+    const move = resolve(parse('e4'), START);
     expect(move.from).toBe('e2');
     expect(move.to).toBe('e4');
     expect(move.promotion).toBeUndefined();
   });
 
   it('resolves Nf3', () => {
-    const move = resolve(parse('Nf3'), STARTING_POSITION);
+    const move = resolve(parse('Nf3'), START);
     expect(move.from).toBe('g1');
     expect(move.to).toBe('f3');
   });
 
   it('resolves Nc3', () => {
-    const move = resolve(parse('Nc3'), STARTING_POSITION);
+    const move = resolve(parse('Nc3'), START);
     expect(move.from).toBe('b1');
     expect(move.to).toBe('c3');
   });
 
   it('resolves d4', () => {
-    const move = resolve(parse('d4'), STARTING_POSITION);
+    const move = resolve(parse('d4'), START);
     expect(move.from).toBe('d2');
     expect(move.to).toBe('d4');
   });
@@ -190,11 +232,11 @@ describe('resolve — castling', () => {
 
 describe('resolve — errors', () => {
   it('throws RangeError for illegal move', () => {
-    expect(() => resolve(parse('e5'), STARTING_POSITION)).toThrow(RangeError);
+    expect(() => resolve(parse('e5'), START)).toThrow(RangeError);
   });
 
   it('throws RangeError for wrong-colored piece move', () => {
-    expect(() => resolve(parse('e5'), STARTING_POSITION)).toThrow(RangeError);
+    expect(() => resolve(parse('e5'), START)).toThrow(RangeError);
   });
 });
 
@@ -215,7 +257,7 @@ describe('resolve — promotion', () => {
     const move = resolve(parse('a8=Q'), pos);
     expect(move.from).toBe('a7');
     expect(move.to).toBe('a8');
-    expect(move.promotion).toBe('q');
+    expect(move.promotion).toBe('queen');
   });
 
   it('resolves capture with promotion', () => {
@@ -223,7 +265,7 @@ describe('resolve — promotion', () => {
     const move = resolve(parse('axb8=Q'), pos);
     expect(move.from).toBe('a7');
     expect(move.to).toBe('b8');
-    expect(move.promotion).toBe('q');
+    expect(move.promotion).toBe('queen');
   });
 });
 
@@ -234,19 +276,13 @@ describe('resolve — promotion', () => {
 describe('stringify — pawn moves', () => {
   it('stringifies pawn push', () => {
     expect(
-      stringify(
-        { from: 'e2', promotion: undefined, to: 'e4' },
-        STARTING_POSITION,
-      ),
+      stringify({ from: 'e2', promotion: undefined, to: 'e4' }, START),
     ).toBe('e4');
   });
 
   it('stringifies pawn double push', () => {
     expect(
-      stringify(
-        { from: 'd2', promotion: undefined, to: 'd4' },
-        STARTING_POSITION,
-      ),
+      stringify({ from: 'd2', promotion: undefined, to: 'd4' }, START),
     ).toBe('d4');
   });
 });
@@ -254,10 +290,7 @@ describe('stringify — pawn moves', () => {
 describe('stringify — piece moves', () => {
   it('stringifies knight move', () => {
     expect(
-      stringify(
-        { from: 'g1', promotion: undefined, to: 'f3' },
-        STARTING_POSITION,
-      ),
+      stringify({ from: 'g1', promotion: undefined, to: 'f3' }, START),
     ).toBe('Nf3');
   });
 });
@@ -288,14 +321,14 @@ describe('stringify — promotion', () => {
   it('stringifies pawn promotion (gives check via diagonal)', () => {
     // a7→a8=Q: the new queen on a8 checks the black king on h1 via diagonal
     const pos = toPosition('8/P7/8/8/8/8/8/4K2k w - - 0 1');
-    expect(stringify({ from: 'a7', promotion: 'q', to: 'a8' }, pos)).toBe(
+    expect(stringify({ from: 'a7', promotion: 'queen', to: 'a8' }, pos)).toBe(
       'a8=Q+',
     );
   });
 
   it('stringifies capture with promotion', () => {
     const pos = toPosition('1n6/P7/8/8/8/8/8/4K2k w - - 0 1');
-    expect(stringify({ from: 'a7', promotion: 'q', to: 'b8' }, pos)).toBe(
+    expect(stringify({ from: 'a7', promotion: 'queen', to: 'b8' }, pos)).toBe(
       'axb8=Q',
     );
   });
@@ -341,18 +374,18 @@ describe('stringify — disambiguation', () => {
 
 describe('stringify — round-trip', () => {
   it('e4 round-trips', () => {
-    const move = resolve(parse('e4'), STARTING_POSITION);
-    expect(stringify(move, STARTING_POSITION)).toBe('e4');
+    const move = resolve(parse('e4'), START);
+    expect(stringify(move, START)).toBe('e4');
   });
 
   it('Nf3 round-trips', () => {
-    const move = resolve(parse('Nf3'), STARTING_POSITION);
-    expect(stringify(move, STARTING_POSITION)).toBe('Nf3');
+    const move = resolve(parse('Nf3'), START);
+    expect(stringify(move, START)).toBe('Nf3');
   });
 
   it('Nc3 round-trips', () => {
-    const move = resolve(parse('Nc3'), STARTING_POSITION);
-    expect(stringify(move, STARTING_POSITION)).toBe('Nc3');
+    const move = resolve(parse('Nc3'), START);
+    expect(stringify(move, START)).toBe('Nc3');
   });
 });
 
