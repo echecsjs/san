@@ -3,6 +3,9 @@
 Agent guidance for the `@echecs/san` package — SAN move notation parser,
 resolver, and stringifier.
 
+**See also:** [`REFERENCES.md`](REFERENCES.md) |
+[`COMPARISON.md`](COMPARISON.md)
+
 See the root `AGENTS.md` for workspace-wide conventions.
 
 **Backlog:** tracked in [GitHub Issues](https://github.com/mormubis/san/issues).
@@ -16,19 +19,6 @@ Notation (SAN) chess moves.
 
 ---
 
-## Similar Libraries
-
-Use these to cross-check output when testing:
-
-- [`chess.js`](https://www.npmjs.com/package/chess.js) — includes SAN parsing
-  (permissive and strict modes) and move validation.
-- [`chessops`](https://www.npmjs.com/package/chessops) — TypeScript library with
-  SAN parsing and writing via `parseSan`/`makeSan`.
-- [`chess`](https://www.npmjs.com/package/chess) — algebraic notation driven
-  chess engine with SAN and UCI move formats.
-
----
-
 | Function               | Input                   | Output     | Throws                                |
 | ---------------------- | ----------------------- | ---------- | ------------------------------------- |
 | `parse(san)`           | SAN string              | `SanMove`  | `RangeError` on empty/invalid input   |
@@ -37,47 +27,6 @@ Use these to cross-check output when testing:
 | `stringify()`          | `Move` + `Position`     | SAN string | `RangeError` if no piece on square    |
 
 The entire implementation lives in a single source file: `src/index.ts`.
-
----
-
-## Dependency Graph
-
-```
-@echecs/position (public API + ./internal)
-        ↑
- @echecs/san
-```
-
-`@echecs/fen` is a **dev** dependency only (used in tests to construct positions
-from FEN strings). It must never be promoted to a runtime dependency.
-
----
-
-## Public API
-
-### `SanMove` interface
-
-```typescript
-interface SanMove {
-  capture: boolean;
-  castle: 'kingside' | 'queenside' | undefined;
-  check: 'check' | 'checkmate' | undefined;
-  file: File | undefined;
-  piece: PieceType;
-  promotion: PromotionPieceType | undefined;
-  rank: Rank | undefined;
-  to: Square | undefined;
-}
-```
-
-Fields are sorted alphabetically (required by `sort-keys` ESLint rule). `to` is
-`undefined` for castling moves; `file` and `rank` are the disambiguation hints
-from the SAN string, not the destination.
-
-### `Move` and `Position`
-
-Both are re-exported from `@echecs/position` for consumer convenience. Do not
-duplicate their definitions in this package.
 
 ---
 
@@ -162,18 +111,6 @@ pnpm lint:ci            # strict — zero warnings, no auto-fix
 pnpm format             # Prettier --write
 pnpm lint && pnpm test && pnpm build   # full pre-PR check
 ```
-
----
-
-## Testing Conventions
-
-- Tests live in `src/__tests__/index.spec.ts`.
-- Use `describe` to group cases by function and scenario; use `it` inside.
-- Use `parseFen` from `@echecs/fen` (dev dep) to build `Position` fixtures.
-- Round-trip tests (`parse` → `resolve` → `stringify`) are the primary
-  correctness signal for `stringify`.
-- Prefer `expect(x).toBe(y)` for exact string/boolean equality.
-- `sort-keys` and `no-console` are relaxed in test files.
 
 ---
 
