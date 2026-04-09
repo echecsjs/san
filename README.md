@@ -69,10 +69,20 @@ interface SanMove {
 `file` and `rank` are the disambiguation hints from the SAN string, not the
 destination square. `to` is `undefined` for castling moves.
 
-`Move` and `Position` are re-exported from `@echecs/position`:
+`Move` is defined locally in `@echecs/san`:
 
 ```typescript
-import type { Move, Position } from '@echecs/san';
+interface Move {
+  from: Square;
+  promotion?: PromotionPieceType;
+  to: Square;
+}
+```
+
+`Position` is re-exported from `@echecs/position` for convenience:
+
+```typescript
+import type { Move, Position, PromotionPieceType } from '@echecs/san';
 ```
 
 ## Errors
