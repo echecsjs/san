@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com), and this
 project adheres to [Semantic Versioning](https://semver.org).
 
+## [3.2.0] - 2026-05-28
+
+### Changed
+
+- Removed `Piece` and `PromotionPiece` type aliases — use `PieceType` and
+  `PromotionPieceType` directly. The `SAN` interface fields `piece` and
+  `promotion` now use the canonical types from `@echecs/position`.
+
+### Added
+
+- Re-exported `PieceType` from `@echecs/position`.
+
 ## [3.1.3] - 2026-05-01
 
 ### Fixed
