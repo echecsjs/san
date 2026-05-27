@@ -16,10 +16,6 @@ import type {
 
 type Disambiguation = File | Rank | Square;
 
-type Piece = PieceType;
-
-type PromotionPiece = PromotionPieceType;
-
 interface SAN {
   capture: boolean;
   castling: boolean;
@@ -27,8 +23,8 @@ interface SAN {
   checkmate: boolean;
   from: Disambiguation | undefined;
   long: boolean;
-  piece: Piece;
-  promotion: PromotionPiece | undefined;
+  piece: PieceType;
+  promotion: PromotionPieceType | undefined;
   to: Square | undefined;
 }
 
@@ -36,7 +32,7 @@ interface SAN {
 // Internal helpers
 // ---------------------------------------------------------------------------
 
-const PIECE_LETTERS: Record<string, Piece> = {
+const PIECE_LETTERS: Record<string, PieceType> = {
   B: 'bishop',
   K: 'king',
   N: 'knight',
@@ -44,7 +40,7 @@ const PIECE_LETTERS: Record<string, Piece> = {
   R: 'rook',
 };
 
-const PROMOTION_LETTERS: Record<string, PromotionPiece> = {
+const PROMOTION_LETTERS: Record<string, PromotionPieceType> = {
   B: 'bishop',
   N: 'knight',
   Q: 'queen',
@@ -64,7 +60,7 @@ function applyMoveToBoard(
   position: Position,
   from: Square,
   to: Square,
-  promotion?: PromotionPiece,
+  promotion?: PromotionPieceType,
 ): Position {
   const piece = position.at(from);
   if (piece === undefined) {
@@ -180,7 +176,7 @@ function parse(san: string, position?: Position): SAN | Move {
     checkString,
   ] = match;
 
-  const piece: Piece = pieceString
+  const piece: PieceType = pieceString
     ? (PIECE_LETTERS[pieceString] ?? 'pawn')
     : 'pawn';
   const file =
@@ -311,7 +307,7 @@ function resolve(move: SAN, position: Position): Move {
 // stringify()
 // ---------------------------------------------------------------------------
 
-const PIECE_TO_LETTER: Record<Piece, string> = {
+const PIECE_TO_LETTER: Record<PieceType, string> = {
   bishop: 'B',
   king: 'K',
   knight: 'N',
@@ -320,7 +316,7 @@ const PIECE_TO_LETTER: Record<Piece, string> = {
   rook: 'R',
 };
 
-const PROMOTION_TO_LETTER: Record<PromotionPiece, string> = {
+const PROMOTION_TO_LETTER: Record<PromotionPieceType, string> = {
   bishop: 'B',
   knight: 'N',
   queen: 'Q',
@@ -429,10 +425,11 @@ function isCheckmate(position: Position): boolean {
   return true;
 }
 
-export type { Disambiguation, Piece, PromotionPiece, SAN };
+export type { Disambiguation, SAN };
 export type {
   File,
   Move,
+  PieceType,
   Position,
   PromotionPieceType,
   Rank,
