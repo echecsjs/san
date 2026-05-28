@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com), and this
 project adheres to [Semantic Versioning](https://semver.org).
 
+## [4.0.0] - 2026-05-28
+
+### Changed
+
+- **BREAKING:** `parse()` now returns `SAN | null` (or `Move | null` with a
+  position) instead of throwing `RangeError` on invalid input.
+- Added `ParseOptions` with `onError` callback, matching the `fen`/`trf`/`pgn`
+  error reporting pattern.
+- `resolve()` still throws `RangeError` on illegal/ambiguous moves.
+
+### Added
+
+- Exported `ParseError` and `ParseOptions` types.
+
 ## [3.2.0] - 2026-05-28
 
 ### Changed
