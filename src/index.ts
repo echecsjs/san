@@ -16,6 +16,17 @@ import type {
 
 type Disambiguation = File | Rank | Square;
 
+interface ParseError {
+  column: number;
+  line: number;
+  message: string;
+  offset: number;
+}
+
+interface ParseOptions {
+  onError?: (error: ParseError) => void;
+}
+
 interface SAN {
   capture: boolean;
   castling: boolean;
@@ -108,11 +119,34 @@ function applyMoveToBoard(
 // parse()
 // ---------------------------------------------------------------------------
 
-function parse(san: string): SAN;
-function parse(san: string, position: Position): Move;
-function parse(san: string, position?: Position): SAN | Move {
+function emitError(options: ParseOptions | undefined, message: string): void {
+  options?.onError?.({ column: 1, line: 1, message, offset: 0 });
+}
+
+function parse(san: string, options?: ParseOptions): SAN | null;
+function parse(
+  san: string,
+  position: Position,
+  options?: ParseOptions,
+): Move | null;
+function parse(
+  san: string,
+  positionOrOptions?: ParseOptions | Position,
+  options?: ParseOptions,
+): Move | SAN | null {
+  const position =
+    positionOrOptions !== undefined && 'turn' in positionOrOptions
+      ? positionOrOptions
+      : undefined;
+  const options_ =
+    position === undefined
+      ? (positionOrOptions as ParseOptions | undefined)
+      : options;
+
   if (san.length === 0) {
-    throw new RangeError('Empty SAN string');
+    emitError(options_, 'Empty SAN string');
+    // eslint-disable-next-line unicorn/no-null
+    return null;
   }
 
   // Strip annotation glyphs
@@ -133,7 +167,13 @@ function parse(san: string, position?: Position): SAN | Move {
     };
 
     if (position !== undefined) {
-      return resolve(sanMove, position);
+      try {
+        return resolve(sanMove, position);
+      } catch {
+        emitError(options_, `No legal move found for "${san}"`);
+        // eslint-disable-next-line unicorn/no-null
+        return null;
+      }
     }
 
     return sanMove;
@@ -153,7 +193,13 @@ function parse(san: string, position?: Position): SAN | Move {
     };
 
     if (position !== undefined) {
-      return resolve(sanMove, position);
+      try {
+        return resolve(sanMove, position);
+      } catch {
+        emitError(options_, `No legal move found for "${san}"`);
+        // eslint-disable-next-line unicorn/no-null
+        return null;
+      }
     }
 
     return sanMove;
@@ -161,7 +207,9 @@ function parse(san: string, position?: Position): SAN | Move {
 
   const match = SAN_REGEX.exec(clean);
   if (!match) {
-    throw new RangeError(`Invalid SAN: "${san}"`);
+    emitError(options_, `Invalid SAN: "${san}"`);
+    // eslint-disable-next-line unicorn/no-null
+    return null;
   }
 
   const [
@@ -214,7 +262,13 @@ function parse(san: string, position?: Position): SAN | Move {
   };
 
   if (position !== undefined) {
-    return resolve(sanMove, position);
+    try {
+      return resolve(sanMove, position);
+    } catch {
+      emitError(options_, `No legal move found for "${san}"`);
+      // eslint-disable-next-line unicorn/no-null
+      return null;
+    }
   }
 
   return sanMove;
@@ -425,7 +479,7 @@ function isCheckmate(position: Position): boolean {
   return true;
 }
 
-export type { Disambiguation, SAN };
+export type { Disambiguation, ParseError, ParseOptions, SAN };
 export type {
   File,
   Move,
