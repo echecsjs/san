@@ -165,14 +165,22 @@ describe('parse — errors', () => {
 
   it('calls onError for invalid input', () => {
     const errors: { message: string }[] = [];
-    parse('invalid', { onError: (error) => errors.push(error) });
+    parse('invalid', {
+      onError: (error) => {
+        errors.push(error);
+      },
+    });
     expect(errors).toHaveLength(1);
     expect(errors[0]?.message).toContain('Invalid SAN');
   });
 
   it('calls onError for empty string', () => {
     const errors: { message: string }[] = [];
-    parse('', { onError: (error) => errors.push(error) });
+    parse('', {
+      onError: (error) => {
+        errors.push(error);
+      },
+    });
     expect(errors).toHaveLength(1);
     expect(errors[0]?.message).toContain('Empty SAN string');
   });
@@ -183,7 +191,11 @@ describe('parse — errors', () => {
 
   it('calls onError for illegal move with position', () => {
     const errors: { message: string }[] = [];
-    parse('e5', START, { onError: (error) => errors.push(error) });
+    parse('e5', START, {
+      onError: (error) => {
+        errors.push(error);
+      },
+    });
     expect(errors).toHaveLength(1);
     expect(errors[0]?.message).toContain('No legal move found');
   });
