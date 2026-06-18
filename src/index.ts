@@ -86,7 +86,7 @@ function applyMoveToBoard(
   // Castling — move the rook alongside the king
   if (piece.type === 'king') {
     const fileDiff = (to.codePointAt(0) ?? 0) - (from.codePointAt(0) ?? 0);
-    const rank = from[1] as string;
+    const rank = from.at(1) as string;
     if (fileDiff === 2) {
       // Kingside: rook h→f
       changes.push(
@@ -104,11 +104,9 @@ function applyMoveToBoard(
 
   // En passant capture — remove the captured pawn
   if (piece.type === 'pawn' && to === position.enPassantSquare) {
-    const epRank =
-      position.turn === 'white'
-        ? String(Number(to[1]) - 1)
-        : String(Number(to[1]) + 1);
-    changes.push([`${to[0]}${epRank}` as Square, undefined]);
+    const epOffset = position.turn === 'white' ? -1 : 1;
+    const epRank = String(Number(to.at(1)) + epOffset);
+    changes.push([`${to.at(0)}${epRank}` as Square, undefined]);
   }
 
   const turn: Color = position.turn === 'white' ? 'black' : 'white';
@@ -235,13 +233,14 @@ function parse(
     fromRankString && RANKS_SET.has(fromRankString)
       ? (fromRankString as Rank)
       : undefined;
-  const capture = captureString === 'x';
+  const isCapture = captureString === 'x';
   const to = `${toFileString}${toRankString}` as Square;
   const promotion =
-    promoString && PROMOTION_LETTERS[promoString]
+    promoString && Object.hasOwn(PROMOTION_LETTERS, promoString)
       ? PROMOTION_LETTERS[promoString]
       : undefined;
-  const check = checkString === '+';
+  const isCheck = checkString === '+';
+  // eslint-disable-next-line unicorn/consistent-boolean-name -- chess domain term
   const checkmate = checkString === '#';
 
   const from: Disambiguation | undefined =
@@ -250,9 +249,9 @@ function parse(
       : (file ?? rank ?? undefined);
 
   const sanMove: SAN = {
-    capture,
+    capture: isCapture,
     castling: false,
-    check,
+    check: isCheck,
     checkmate,
     from,
     long: false,
@@ -309,12 +308,12 @@ function resolve(move: SAN, position: Position): Move {
         }
       } else if (FILES_SET.has(move.from)) {
         // File disambiguation
-        if (square[0] !== move.from) {
+        if (square.at(0) !== move.from) {
           continue;
         }
       } else {
         // Rank disambiguation
-        if (square[1] !== move.from) {
+        if (square.at(1) !== move.from) {
           continue;
         }
       }
@@ -428,19 +427,19 @@ function stringify(move: Move, position: Position): string {
     }
 
     if (ambiguous.length > 0) {
-      const sameFile = ambiguous.some((sq) => sq[0] === move.from[0]);
-      const sameRank = ambiguous.some((sq) => sq[1] === move.from[1]);
-      if (!sameFile) {
-        disambig = move.from[0] ?? '';
-      } else if (sameRank) {
+      const isSameFile = ambiguous.some((sq) => sq.at(0) === move.from.at(0));
+      const isSameRank = ambiguous.some((sq) => sq.at(1) === move.from.at(1));
+      if (!isSameFile) {
+        disambig = move.from.at(0) ?? '';
+      } else if (isSameRank) {
         disambig = move.from;
       } else {
-        disambig = move.from[1] ?? '';
+        disambig = move.from.at(1) ?? '';
       }
     }
   } else if (isCapture) {
     // Pawn capture always includes the from-file
-    disambig = move.from[0] ?? '';
+    disambig = move.from.at(0) ?? '';
   }
 
   const captureString = isCapture ? 'x' : '';
@@ -464,15 +463,12 @@ function isCheckmate(position: Position): boolean {
   for (const [from, piece] of position.pieces(position.turn)) {
     const reachable = position.reach(from, piece);
     for (const to of reachable) {
-      // Skip captures of own pieces (reach already filters these)
       const target = position.at(to);
-      if (target?.color === position.turn) {
-        continue;
-      }
-
-      const after = applyMoveToBoard(position, from, to);
-      if (!after.derive({ turn: position.turn }).isCheck) {
-        return false;
+      if (target?.color !== position.turn) {
+        const after = applyMoveToBoard(position, from, to);
+        if (!after.derive({ turn: position.turn }).isCheck) {
+          return false;
+        }
       }
     }
   }
