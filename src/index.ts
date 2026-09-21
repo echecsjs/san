@@ -454,6 +454,25 @@ function stringify(move: Move, position: Position): string {
   return `${pieceString}${disambig}${captureString}${move.to}${promoString}${suffix}`;
 }
 
+function hasLegalEscape(
+  position: Position,
+  from: Square,
+  reachable: Square[],
+): boolean {
+  for (const to of reachable) {
+    if (position.at(to)?.color === position.turn) {
+      continue;
+    }
+    if (
+      !applyMoveToBoard(position, from, to).derive({ turn: position.turn })
+        .isCheck
+    ) {
+      return true;
+    }
+  }
+  return false;
+}
+
 function isCheckmate(position: Position): boolean {
   if (!position.isCheck) {
     return false;
@@ -461,15 +480,8 @@ function isCheckmate(position: Position): boolean {
 
   // Try all moves for the side to move — if any gets out of check, not checkmate
   for (const [from, piece] of position.pieces(position.turn)) {
-    const reachable = position.reach(from, piece);
-    for (const to of reachable) {
-      const target = position.at(to);
-      if (target?.color !== position.turn) {
-        const after = applyMoveToBoard(position, from, to);
-        if (!after.derive({ turn: position.turn }).isCheck) {
-          return false;
-        }
-      }
+    if (hasLegalEscape(position, from, position.reach(from, piece))) {
+      return false;
     }
   }
   return true;
