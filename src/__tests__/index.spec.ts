@@ -16,8 +16,8 @@ function parseSAN(san: string): SAN {
   return result;
 }
 
-function parseMove(san: string, position: Position): Move {
-  const result = parse(san, position);
+function parseMove(san: string): Move {
+  const result = parse(san, START);
   if (result === null) {
     throw new Error(`Expected valid move, got null for "${san}"`);
   }
@@ -203,14 +203,14 @@ describe('parse — errors', () => {
 
 describe('parse — with position', () => {
   it('parses and resolves e4 from starting position', () => {
-    const move = parseMove('e4', START);
+    const move = parseMove('e4');
     expect(move.from).toBe('e2');
     expect(move.to).toBe('e4');
     expect(move.promotion).toBeUndefined();
   });
 
   it('parses and resolves Nf3 from starting position', () => {
-    const move = parseMove('Nf3', START);
+    const move = parseMove('Nf3');
     expect(move.from).toBe('g1');
     expect(move.to).toBe('f3');
     expect(move.promotion).toBeUndefined();
